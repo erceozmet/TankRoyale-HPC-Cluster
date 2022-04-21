@@ -13,7 +13,7 @@ let minimap_state = new ClientState(MINIMAP_DIMS, MAP_DIMS, {width: 1, height: 1
 let player_count = 0;
 
 // var host = window.document.location.host.replace(/:.*/, '');
-var client = new Colyseus.Client(location.protocol.replace("http", "ws") + "//9438-130-64-116-64.ngrok.io");
+var client = new Colyseus.Client(location.protocol.replace("http", "wss") + "//9438-130-64-116-64.ngrok.io");
 
 
 
