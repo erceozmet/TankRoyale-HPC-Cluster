@@ -14,7 +14,7 @@ let player_count = 0;
 
 // var host = window.document.location.host.replace(/:.*/, '');
 // var client = new Colyseus.Client(location.protocol.replace("http", "ws") + "//" + host + (location.port ? ':' + location.port : ''));
-var client = new Colyseus.Client("https://10.246.192.44:2567");
+var client = new Colyseus.Client("10.246.192.44:2567");
 
 
 /******* Button press registering variables *******/
