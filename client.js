@@ -13,8 +13,8 @@ let minimap_state = new ClientState(MINIMAP_DIMS, MAP_DIMS, {width: 1, height: 1
 let player_count = 0;
 
 // var host = window.document.location.host.replace(/:.*/, '');
+// var client = new Colyseus.Client(location.protocol.replace("http", "ws") + "//" + host + (location.port ? ':' + location.port : ''));
 var client = new Colyseus.Client(location.protocol.replace("http", "ws") + "//d1e2-130-64-116-64.ngrok.io");
-
 
 
 /******* Button press registering variables *******/
@@ -139,20 +139,19 @@ client.joinOrCreate("battle_room").then(room => {
         client_state.change_health(new_health);
     });
 
-    room.onMessage("new_weapon", function (new_weapon) {
-        client_state.change_weapon(new_weapon);
+    room.onMessage("new_weapon", function (weapon) {
+        client_state.change_weapon(weapon);
     });
 
     room.onMessage("explosion", function (index) {
-        const EXPLOSION_LENGTH = 1000
-        console.log("exploding tank")
-        let sprite = client_state.explode_tank(index);
+        const EXPLOSION_LENGTH = 200;
+        console.log("exploding projectile");
+        let sprite = client_state.add_explosion(index);
         app.stage.addChild(sprite);
-        setTimeout(() => app.stage.removeChild(sprite), EXPLOSION_LENGTH);
-
-        let mini_sprite = minimap_state.explode_tank(index);
-        miniapp.stage.addChild(mini_sprite);
-        setTimeout(() => miniapp.stage.removeChild(mini_sprite), EXPLOSION_LENGTH);
+        setTimeout(() => {
+            client_state.remove_explosion(index);
+            app.stage.removeChild(sprite);
+        }, EXPLOSION_LENGTH);
     });
     
     room.onMessage("start", function() {

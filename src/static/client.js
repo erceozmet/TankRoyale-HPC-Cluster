@@ -58,9 +58,8 @@ client.joinOrCreate("battle_room").then(room => {
     // gameobj listeners
     room.state.map.listen("synced_tiles", (currentValue, previousValue) => {
         currentValue.onAdd = (gameobj, key) => {
-            console.log("gameobj is", gameobj);
+            console.log("gameobj is", gameobj, "id: ", gameobj.id);
          
-            console.log("adding gameobj ", gameobj.id);
             let index = client_state.get_index_from_key(key);
         
             console.log(gameobj, "has been added at", index);
@@ -139,8 +138,8 @@ client.joinOrCreate("battle_room").then(room => {
         client_state.change_health(new_health);
     });
 
-    room.onMessage("new_weapon", function (new_weapon) {
-        client_state.change_weapon(new_weapon);
+    room.onMessage("new_weapon", function (weapon) {
+        client_state.change_weapon(weapon);
     });
 
     room.onMessage("explosion", function (index) {

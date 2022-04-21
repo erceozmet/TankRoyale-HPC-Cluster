@@ -2,7 +2,7 @@ import { Room, Client } from "colyseus";
 import { MyRoomState } from "./schema/MyRoomState";
 import { GameMap, Location } from "./schema/GameMap";
 import { Tank } from "./schema/Tank";
-import { SniperWeapon, MachinegunWeapon, ShotgunWeapon } from "./schema/Weapon";
+import { Weapon, Sniper, SubmachineGun, Shotgun } from "./schema/Weapon";
 import { Obstacle } from "./schema/Obstacle";
 
 export class MyRoom extends Room<MyRoomState> {
@@ -12,6 +12,7 @@ export class MyRoom extends Room<MyRoomState> {
     player_locations = new Array();
     player_count = 0;
     room_leader: Client = null;
+    game_started = false;
 
     initialize_player_loc() {
         let players_per_row = Math.sqrt(this.player_count);
@@ -55,7 +56,7 @@ export class MyRoom extends Room<MyRoomState> {
             let tank_health = tank.health;
             let tank_id = this.state.map.put(tank, start_location[0], start_location[1]);
             client.send("tank_id", {tank_id, start_location, tank_health});
-            client.send("new_weapon", [tank.weapon.damage, tank.weapon.fire_rate, tank.weapon.range, tank.weapon.speed]);
+            client.send("new_weapon", { name: tank.weapon.name, imagePath: tank.weapon.imagePath } );
 
             this.client_to_tank.set(client.sessionId, tank_id);
             this.client_to_buffer.set(client.sessionId, new Array());
@@ -90,7 +91,7 @@ export class MyRoom extends Room<MyRoomState> {
         // drop 3 of each special weapon on random coordinates
         let count = 10;
         for (let i = 0; i < count; i++) {
-            let weapons = [new SniperWeapon(), new MachinegunWeapon(), new ShotgunWeapon()];
+            let weapons = [new Sniper(), new SubmachineGun(), new Shotgun()];
             for (let j = 0; j < weapons.length; j++) {
                 let x: number, y: number;
                 let map_height = this.state.map.height;
@@ -105,8 +106,11 @@ export class MyRoom extends Room<MyRoomState> {
     }
 
     dispose_client(client_id: string) {
+        console.log("dispose client")
         let tank_id = this.client_to_tank.get(client_id);
+        console.log("tank", tank_id);
         this.state.map.delete(tank_id);
+
         this.client_to_tank.delete(client_id);
         this.client_to_buffer.delete(client_id);
     }
@@ -207,6 +211,8 @@ export class MyRoom extends Room<MyRoomState> {
 
         this.setSimulationInterval((deltaTime) => this.update(deltaTime));
 
+        this.game_started = true;
+
         this.onMessage("error", (client) => {
             let tank_id = this.client_to_tank.get(client.sessionId);
             let loc = this.state.map.locations.get(tank_id);
@@ -225,11 +231,16 @@ export class MyRoom extends Room<MyRoomState> {
         });
 
         this.onMessage("button", (client, button) => {
-            this.client_to_buffer.get(client.sessionId).push(button);
+            let buffer = this.client_to_buffer.get(client.sessionId)
+            if (buffer){
+                buffer.push(button);
+            }
         });
 
         this.onMessage("projectile", (client, barrelDirrection) => {
-            let tank = this.state.map.get(this.client_to_tank.get(client.sessionId)) as Tank;
+            let tank_id = this.client_to_tank.get(client.sessionId);
+            if (!tank_id) return;
+            let tank = this.state.map.get(tank_id) as Tank;
             let tankLoc = this.state.map.locations.get(tank.id);
             let weapon = tank.weapon;
             // TODO POSSIBLY keep track of who shot who
@@ -290,7 +301,7 @@ export class MyRoom extends Room<MyRoomState> {
         this.broadcast("player_count", this.player_count);
 
         // if room leader leaves without starting the game, assign someone else to be the room leader
-        if (this.room_leader == client) {
+        if (this.room_leader == client && !this.game_started) {
             for (let i = 0; i < this.clients.length; i++) {
                 if (this.clients[i] != this.room_leader) {
                     this.room_leader = this.clients[i];
