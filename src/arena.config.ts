@@ -7,6 +7,8 @@ import path from "path";
  */
 import { MyRoom } from "./rooms/MyRoom";
 
+
+
 export default Arena({
     getId: () => "Tank Royale",
 
@@ -29,7 +31,12 @@ export default Arena({
             res.send("Connected to backend server");
         });
 
-        app.use(cors());
+        const allowedOrigins = ['https://9438-130-64-116-64.ngrok.io', 'http:////9438-130-64-116-64.ngrok.io'];
+
+        const options: cors.CorsOptions = {
+        origin: allowedOrigins
+        };
+        app.use(cors(options));
 
         app.use("/client", (req, res) =>{
             res.sendFile(path.join(__dirname, '/static/game.html'))
