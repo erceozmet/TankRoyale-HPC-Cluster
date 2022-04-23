@@ -14,7 +14,7 @@ let player_count = 0;
 
 // var host = window.document.location.host.replace(/:.*/, '');
 // var client = new Colyseus.Client(location.protocol.replace("http", "ws") + "//" + host + (location.port ? ':' + location.port : ''));
-var client = new Colyseus.Client(location.protocol.replace("http", "ws") + "//fd8a-130-64-116-64.ngrok.io");
+var client = new Colyseus.Client(location.protocol.replace("http", "ws") + "//750d-130-64-116-64.ngrok.io");
 
 
 /******* Button press registering variables *******/
