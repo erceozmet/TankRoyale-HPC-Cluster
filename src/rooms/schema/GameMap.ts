@@ -77,6 +77,17 @@ export class GameMap extends Schema {
         return this.checkObjectRange(col, row, obj);
     }
 
+    // canPlaceObstacles(coordinates : Array<[number, number]>, objs: Array<GameObject>, all_obstacles: Array<[GameObject, number, number]>) : boolean {
+
+    //     for (let i = 0; i < coordinates.length; i++) {
+    //         let [x, y] = coordinates[i]
+    //         if (!this.canPlace(x, y, objs[i])) return false;
+    //     }
+
+    //     return true;
+        
+    // }
+
     get(id: string): GameObject {
         let loc = this.locations.get(id);
         return this.tiles.get(loc.col, loc.row);
@@ -105,7 +116,6 @@ export class GameMap extends Schema {
 
     put(obj: GameObject, col: number, row: number): string {
         obj.id = this.getUniqueId();
-        console.log("put ", obj.getType(), "to ", col, row);
         for (let i = 0; i < obj.width; i++) {
             for (let j = 0; j < obj.height; j++) {
                 if (this.tiles.get(col + i, row + j) != null) {
@@ -119,18 +129,10 @@ export class GameMap extends Schema {
         return obj.id;
     }
 
-    moveTank(id: string, right: number, up: number): boolean {
-        let loc = this.locations.get(id);
-        let obj = this.tiles.get(loc.col, loc.row) as Tank;
-
-        return this.setLoc(obj, loc.col, loc.row, loc.col + right, loc.row + up);
-    }
-
     checkSquareForMove(tank: Tank, col: number, row: number): boolean {
         let prev_obj = this.tiles.get(col, row);
         if (prev_obj == null) return true;
         if (prev_obj.getType() == "weapon") {
-            console.log("weapon picked up");
             tank.weapon = prev_obj as Weapon;
             tank.client.send("new_weapon", { name: tank.weapon.name, imagePath: tank.weapon.imagePath } );
             this.delete(prev_obj.id);
@@ -142,11 +144,18 @@ export class GameMap extends Schema {
         return true;
     }
 
-    setLoc(tank: Tank, old_col: number, old_row: number, col: number, row: number): boolean {
+    moveTank(id: string, right: number, up: number): boolean {
+        let loc = this.locations.get(id);
+        let tank = this.tiles.get(loc.col, loc.row) as Tank;
+        let old_col = loc.col;
+        let old_row = loc.row;
+        let col = loc.col + right;
+        let row = loc.row + up;
+    
         if (!this.checkObjectRange(col, row, tank)) return false;
 
-        let goingUp = (row - old_row) > 0;
-        let goingRight = (col - old_col) > 0;
+        let goingUp = up > 0;
+        let goingRight = right > 0;
 
         let min_row_check = goingUp ? old_row + tank.height : row;
         let max_row_check = goingUp ? row + tank.height : old_row;
@@ -166,8 +175,6 @@ export class GameMap extends Schema {
                 if (!this.checkSquareForMove(tank, i, j)) return false;
             }
         }
-
-        console.log("moving tank", tank.id, "from", old_col, old_row, "to", col, row);
 
         let min_row_null = goingUp ? old_row : row + tank.height;
         let max_row_null = goingUp ? row : old_row + tank.height;
@@ -202,10 +209,14 @@ export class GameMap extends Schema {
             }
         }
 
+        let direction = Math.atan2(up, right); // angle in radians
+        if (direction == tank.last_direction) {
+            tank.direction = direction;
+        }
+        tank.last_direction = direction;
         this.synced_tiles.delete(this.to1D(old_col, old_row));
         this.synced_tiles.set(this.to1D(col, row), tank);
 
-        let loc = this.locations.get(tank.id);
         loc.col = col;
         loc.row = row;
         return true;

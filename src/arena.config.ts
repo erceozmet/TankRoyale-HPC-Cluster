@@ -29,7 +29,7 @@ export default Arena({
             res.send("Connected to backend server");
         });
 
-        const allowedOrigins = ['https://f750d-130-64-116-64.ngrok.io', 'http://f750d-130-64-116-64.ngrok.io'];
+        const allowedOrigins = ['http://be9f-130-64-116-64.ngrok.io', 'https://be9f-130-64-116-64.ngrok.io'];
 
         const options: cors.CorsOptions = {
         origin: allowedOrigins
@@ -50,6 +50,10 @@ export default Arena({
             res.sendFile(path.join(__dirname, '/images/tank.png'))
         })
 
+        app.use("/images/icon.png", (req, res) =>{
+            res.sendFile(path.join(__dirname, '/images/icon.png'))
+        })
+
         app.use("/images/barrel.png", (req, res) =>{
             res.sendFile(path.join(__dirname, '/images/barrel.png'))
         })
@@ -65,8 +69,8 @@ export default Arena({
         app.use("/images/projectile.png", (req, res) =>{
             res.sendFile(path.join(__dirname, '/images/projectile.png'))
         })
-        app.use("/images/black.png", (req, res) =>{
-            res.sendFile(path.join(__dirname, '/images/black.png'))
+        app.use("/images/obstacle.png", (req, res) =>{
+            res.sendFile(path.join(__dirname, '/images/obstacle.png'))
         })
 
         app.use("/images/shotgun.png", (req, res) =>{

@@ -5,11 +5,11 @@ const minimap = document.getElementById("minimap");
 const SCREEN_DIMS = {width: gamebox.clientWidth, height: gamebox.clientHeight};
 const MAP_DIMS = {width: 250, height: 250};
 // const MAP_VIEW_RATIO = {width: MAP_DIMS.width / 100, height: MAP_DIMS.height / 100};
-const MAP_VIEW_RATIO = {width: 2, height: 2};
-let client_state = new ClientState(SCREEN_DIMS, MAP_DIMS, MAP_VIEW_RATIO);
+const MAP_VIEW_RATIO = {width: 1.5, height: 1.5};
+let client_state = new ClientState(SCREEN_DIMS, MAP_DIMS, MAP_VIEW_RATIO, true);
 
 let MINIMAP_DIMS = {width: minimap.clientWidth, height: minimap.clientHeight};
-let minimap_state = new ClientState(MINIMAP_DIMS, MAP_DIMS, {width: 1, height: 1});
+let minimap_state = new ClientState(MINIMAP_DIMS, MAP_DIMS, {width: 1, height: 1}, false);
 let player_count = 0;
 
 var host = window.document.location.host.replace(/:.*/, '');
@@ -29,17 +29,17 @@ let keys = new Set(),
     };
 
 client.joinOrCreate("battle_room").then(room => {
-    console.log("joined");
     // pixi initialization
     let app = new PIXI.Application({
         width: SCREEN_DIMS.width,
         height: SCREEN_DIMS.height,
         backgroundColor: 0xffffff
     });
+    app.stage.addChild(client_state.barrel);
     let miniapp = new PIXI.Application({
         width: MINIMAP_DIMS.width,
         height: MINIMAP_DIMS.height,
-        backgroundColor: 0xffffff
+        backgroundColor: 0xffffff,
     });
 
     gamebox.appendChild(app.view);
@@ -52,47 +52,45 @@ client.joinOrCreate("battle_room").then(room => {
     app.stage.addChild(background);
     client_state.background = background;
 
+    var mini_background = new PIXI.TilingSprite.from(BACKGROUND_PATH, {width: MINIMAP_DIMS.width, height: MINIMAP_DIMS.height});
+    mini_background.position.set(0,0);
+    miniapp.stage.addChild(mini_background);
+    minimap_state.background = mini_background;
+    
     // game map decls
     // client_state.render_bars();
-    
+
     // gameobj listeners
     room.state.map.listen("synced_tiles", (currentValue, previousValue) => {
-        currentValue.onAdd = (gameobj, key) => {
-            console.log("gameobj is", gameobj, "id: ", gameobj.id);
-         
+        currentValue.onAdd = (gameobj, key) => {         
             let index = client_state.get_index_from_key(key);
         
-            console.log(gameobj, "has been added at", index);
             if (gameobj.id) {
                 let sprite = client_state.add_gameobj(gameobj, index);
+                console.log("add gameobj", gameobj.id, "to", index)
                 app.stage.addChild(sprite);
+                if (gameobj.id == client_state.tank_id) {
+                    app.stage.addChild(client_state.barrel);
+                }
                 let mini_sprite = minimap_state.add_gameobj(gameobj, index);
-                miniapp.stage.addChild(mini_sprite);
-                console.log(gameobj, "has been added at", index);
+                if (mini_sprite) miniapp.stage.addChild(mini_sprite);
             } else {
                 room.send("error");
             }
         };
         
         currentValue.onRemove = (gameobj, key) => {
-            console.log("removing gameobj", gameobj.id);
             client_state.render_view();
             let index = client_state.get_index_from_key(key);
             if (gameobj.id) {
                 let sprite = client_state.remove_gameobj(gameobj, index);
                 app.stage.removeChild(sprite);
                 let mini_sprite = minimap_state.remove_gameobj(gameobj, index);
-                miniapp.stage.removeChild(mini_sprite);
-                console.log(gameobj, "has been removed at: ", index);
+                if (mini_sprite) miniapp.stage.removeChild(mini_sprite);
             } else {
                 room.send("error");
             }
         }
-    });
-
-    room.onError((code, message) => {
-        console.log("oops, error ocurred:");
-        console.log(message);
     });
 
     room.onMessage("room", (type) => {
@@ -117,7 +115,6 @@ client.joinOrCreate("battle_room").then(room => {
     });
 
     room.onMessage("tank_id", function (message) {
-        console.log("setting tank_id", message);
         client_state.set_tank_id(message.tank_id, message.start_location, message.tank_health);
         minimap_state.set_tank_id(message.tank_id, message.start_location);
     });
@@ -144,7 +141,6 @@ client.joinOrCreate("battle_room").then(room => {
 
     room.onMessage("explosion", function (index) {
         const EXPLOSION_LENGTH = 200;
-        console.log("exploding projectile");
         let sprite = client_state.add_explosion(index);
         app.stage.addChild(sprite);
         setTimeout(() => {
@@ -155,7 +151,6 @@ client.joinOrCreate("battle_room").then(room => {
     
     room.onMessage("start", function() {
         overlayOff();
-
         document.onkeydown = function (e) {
             e.preventDefault();
             
@@ -190,16 +185,13 @@ client.joinOrCreate("battle_room").then(room => {
             e.preventDefault();
         };
 
-        document.onclick = function(e) {
-            var mouseX = e.pageX; 
-            var mouseY = e.pageY; 
-            var [tankX, tankY] = client_state.get_screen_coordinates(client_state.tank_pos);
-            tankY += client_state.tank_dims.height * client_state.tile_size.height / 2;
-            tankX += client_state.tank_dims.width  * client_state.tile_size.width  / 2;
-            // code for updating barrelDirection
-            var barrelDirection = Math.atan2(mouseY - tankY, mouseX - tankX); // angle in radians
+        app.stage.addChild(client_state.barrel);
+        var barrelDirection = 0;
+        document.onmousemove = function(e) {
+            barrelDirection = client_state.render_barrel();
+        };
 
-            console.log("clicked on ", e.pageX, e.pageY);
+        document.onclick = function(e) {
             room.send("projectile", barrelDirection);
         };
     });
@@ -207,13 +199,11 @@ client.joinOrCreate("battle_room").then(room => {
     // projectile code
     room.state.map.listen("projectiles", (currentValue, previousValue) => {
         currentValue.onAdd = (projectile, key) => {
-            console.log("adding projectile", projectile);
             let sprite = client_state.add_projectile(projectile);
             app.stage.addChild(sprite);
         };
 
         currentValue.onRemove = (projectile, key) => {
-            console.log("removing projectile", projectile.id);
             let sprite = client_state.remove_projectile(projectile);
             app.stage.removeChild(sprite);
         }
