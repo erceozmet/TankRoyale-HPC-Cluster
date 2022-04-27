@@ -29,7 +29,7 @@ export default Arena({
             res.send("Connected to backend server");
         });
 
-        const allowedOrigins = ['http://be9f-130-64-116-64.ngrok.io', 'https://be9f-130-64-116-64.ngrok.io'];
+        const allowedOrigins = ['http://d462-130-64-116-64.ngrok.io', 'https://d462-130-64-116-64.ngrok.io'];
 
         const options: cors.CorsOptions = {
         origin: allowedOrigins
