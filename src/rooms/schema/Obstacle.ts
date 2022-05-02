@@ -4,7 +4,7 @@ export class Obstacle extends GameObject {
 
     constructor(height: number, width: number) {
         super("images/obstacle.png", height, width);
-        
+
     }
 
     getType(): string {
@@ -21,7 +21,7 @@ export class Obstacle extends GameObject {
             // top right
             // horizontal
             [35, MIN_DIM, -(50), 10],
-            [35, MIN_DIM, -35, 55], 
+            [35, MIN_DIM, -35, 55],
             [45, MIN_DIM, -(80), 70],
             [15, 15, -50, 30],
 
@@ -33,14 +33,14 @@ export class Obstacle extends GameObject {
             // horizontal
             [35, MIN_DIM, 0, -110],
             [25, MIN_DIM, 10, -95],
-        
+
             [15, MIN_DIM, 10, -17],
             [15, MIN_DIM, 25, -27],
             [35, MIN_DIM, 40, -17],
-            
+
             [15, MIN_DIM, 25, -75],
             [15, MIN_DIM, 25, -45],
-            
+
 
             // vertical
             [MIN_DIM, 75, 10, -92],
@@ -56,7 +56,7 @@ export class Obstacle extends GameObject {
             [10, MIN_DIM, 113, 142],
             [10, MIN_DIM, 133, 115],
             [10, MIN_DIM, 133, 142],
-            
+
             [60, MIN_DIM, 97, 95],
             [60, MIN_DIM, 97, 160],
 
@@ -74,12 +74,12 @@ export class Obstacle extends GameObject {
             [100, MIN_DIM, 20, 25],
             [45, MIN_DIM, 20, 40],
             [45, MIN_DIM, 75, 40],
-            
+
             // vertical
             [MIN_DIM, 50, 62, 43],
             [MIN_DIM, 50, 75, 43],
 
-        ] 
+        ]
         return obstacles;
     }
 

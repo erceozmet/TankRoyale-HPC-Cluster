@@ -14,7 +14,7 @@ export class MyRoom extends Room<MyRoomState> {
     player_count = 0;
     room_leader: Client = null;
     game_started = false;
-    
+
     initialize_player_loc() {
         let players_per_row = Math.sqrt(Math.floor(this.player_count * 1.5));
         let map_width = this.state.map.width;
@@ -34,16 +34,16 @@ export class MyRoom extends Room<MyRoomState> {
 
     generate_tank_pos(tank: Tank): [number, number] {
         if (this.player_locations.length > 0) {
-            let start_index = Math.floor(Math.random() * (this.player_locations.length -1));
-            let [x,y] = this.player_locations[start_index];
+            let start_index = Math.floor(Math.random() * (this.player_locations.length - 1));
+            let [x, y] = this.player_locations[start_index];
             this.player_locations.splice(start_index, 1);
-            if (this.state.map.canPlace(x, y, tank)) {    
-                return [x,y];
+            if (this.state.map.canPlace(x, y, tank)) {
+                return [x, y];
             } else {
                 return this.generate_tank_pos(tank);
             }
-        } 
-        let x,y;
+        }
+        let x, y;
         let map_width = this.state.map.width;
         let map_height = this.state.map.height;
         do {
@@ -51,39 +51,40 @@ export class MyRoom extends Room<MyRoomState> {
             y = Math.floor(Math.random() * map_height);
         } while (!this.state.map.canPlace(x, y, tank))
         return [x, y];
-        
-    }
-        
-        
-        
 
-    
+    }
+
+
+
+
+
 
     doesOverlap(l1: Location, r1: Location, l2: Location, r2: Location): boolean {
         // If one rectangle is on left side of other
         if (l1.col > r2.col || l2.col > r1.col)
             return false;
-    
+
         // If one rectangle is above other
         if (r1.row > l2.row || r2.row > l1.row)
             return false;
-    
+
         return true;
     }
+
 
     place_tanks() {
         for (let i = 0; i < this.clients.length; i++) {
             let client = this.clients[i];
             // pick random start loc for client
-            
+
             // put client's tank on the map
             let tank = new Tank(client);
             let tank_health = tank.health;
             let start_location = this.generate_tank_pos(tank);
             let tank_id = this.state.map.put(tank, start_location[0], start_location[1]);
-        
-            client.send("tank_id", {tank_id, start_location, tank_health});
-            client.send("new_weapon", { name: tank.weapon.name, imagePath: tank.weapon.imagePath } );
+
+            client.send("tank_id", { tank_id, start_location, tank_health });
+            client.send("new_weapon", { name: tank.weapon.name, imagePath: tank.weapon.imagePath });
 
             this.client_to_tank.set(client.sessionId, tank_id);
             this.client_to_buffer.set(client.sessionId, new Array());
@@ -135,7 +136,7 @@ export class MyRoom extends Room<MyRoomState> {
         this.client_to_buffer.delete(client_id);
     }
 
-    update (deltaTime: any) {
+    update(deltaTime: any) {
         this.client_to_buffer.forEach((buffer, client) => {
             let tankId = this.client_to_tank.get(client);
             let tank = this.state.map.get(tankId) as Tank;
@@ -152,9 +153,9 @@ export class MyRoom extends Room<MyRoomState> {
 
             let up = 0;
             let right = 0;
-            for (let i = 0; i < buffer.length; i++){
+            for (let i = 0; i < buffer.length; i++) {
                 console.log(buffer[i]);
-                if (buffer[i] == "KeyW") up -= 1; 
+                if (buffer[i] == "KeyW") up -= 1;
                 else if (buffer[i] == "KeyS") up += 1;
                 else if (buffer[i] == "KeyD") right += 1;
                 else if (buffer[i] == "KeyA") right -= 1;
@@ -187,21 +188,21 @@ export class MyRoom extends Room<MyRoomState> {
             if (!is_inside_walls || !has_range_remaining || is_on_enemy || is_on_obstacle) {
                 this.state.map.explodeProjectile(projectile);
                 if (is_on_enemy || is_on_obstacle) {
-                    this.broadcast("explosion", {id: projectile.id, col: Math.round(projectile.col), row: Math.round(projectile.row)})
+                    this.broadcast("explosion", { id: projectile.id, col: Math.round(projectile.col), row: Math.round(projectile.row) })
                 }
                 if (is_on_enemy) {
                     let enemy_tank = obj_at_newloc as Tank;
                     enemy_tank.health -= projectile.damage;
                     enemy_tank.client.send("hit", enemy_tank.health);
                     if (enemy_tank.health <= 0) {
-                        enemy_tank.client.send("lose", this.client_to_tank.size);                        
+                        enemy_tank.client.send("lose", this.client_to_tank.size);
                         this.dispose_client(enemy_tank.client.sessionId);
                     }
                 }
             }
         });
     }
-    
+
     gameStart() {
         this.clock.clear(); // cancel the timeout for disposing room (in case room leader is AFK)
 
@@ -238,7 +239,7 @@ export class MyRoom extends Room<MyRoomState> {
 
         this.onMessage("button", (client, button) => {
             let buffer = this.client_to_buffer.get(client.sessionId)
-            if (buffer){
+            if (buffer) {
                 buffer.push(button);
             }
         });
@@ -253,14 +254,14 @@ export class MyRoom extends Room<MyRoomState> {
 
             if (weapon.fireCountdown == 0) {
                 let projectileLoc = new Location(Math.round(tankLoc.col + tank.width / 2), Math.round(tankLoc.row + tank.height / 2));
-                
+
                 let projectile = weapon.shootProjectile(tank.id, barrelDirrection, this.state.map.getUniqueId(), projectileLoc);
                 this.state.map.projectiles.push(projectile);
                 weapon.fireCountdown = weapon.fire_rate;
             }
         });
     }
-    
+
     onCreate(options: any) {
         this.setState(new MyRoomState());
 
@@ -271,7 +272,7 @@ export class MyRoom extends Room<MyRoomState> {
         });
 
         this.clock.setTimeout(() => {
-            this.broadcast("timeout");   
+            this.broadcast("timeout");
             this.disconnect();
         }, 900000); // 15 minutes
     }
@@ -292,12 +293,12 @@ export class MyRoom extends Room<MyRoomState> {
 
     onLeave(client: Client, consented: boolean) {
         let tank_id = this.client_to_tank.get(client.sessionId);
-       
-        if (tank_id != undefined){
+
+        if (tank_id != undefined) {
             this.dispose_client(client.sessionId);
             console.log("User:", client.sessionId, "and its tank", tank_id, "has left the game room");
         }
-        else{
+        else {
             console.log("User ", client.sessionId, " has left the game room");
         }
 
